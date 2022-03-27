@@ -28,7 +28,8 @@ namespace AsyncShoppingCart.Test
         public async Task GetAllAsync_ShouldReturn200OkStatus()
         {
             // Arrange
-            _mockService.Setup(service => service.GetAllItemsAsync()).ReturnsAsync(ShoppingCartMockData.GetCartItems());
+            var cartItems = ShoppingCartMockData.GetCartItems();
+            _mockService.Setup(service => service.GetAllItemsAsync()).ReturnsAsync(cartItems);
 
             // Act
             var result = await _controller.GetAllAsync() as OkObjectResult;
@@ -42,7 +43,8 @@ namespace AsyncShoppingCart.Test
         public async Task GetAllAsync_WhenItemIsEmpty_ShouldReturn204NoContentStatus()
         {
             // Arrange
-            _mockService.Setup(service => service.GetAllItemsAsync()).ReturnsAsync(ShoppingCartMockData.GetEmptyCartItems());
+            var cartItems = ShoppingCartMockData.GetEmptyCartItems();
+            _mockService.Setup(service => service.GetAllItemsAsync()).ReturnsAsync(cartItems);
 
             // Act
             var result = await _controller.GetAllAsync() as NoContentResult;
@@ -57,7 +59,8 @@ namespace AsyncShoppingCart.Test
         public async Task GetAllAsync_ReturnShoppingCartItems()
         {
             // Arrange
-            _mockService.Setup(service => service.GetAllItemsAsync()).ReturnsAsync(ShoppingCartMockData.GetCartItems());
+            var cartItems = ShoppingCartMockData.GetCartItems();
+            _mockService.Setup(service => service.GetAllItemsAsync()).ReturnsAsync(cartItems);
 
             // Act
             var okResult = await _controller.GetAllAsync() as OkObjectResult;
@@ -92,12 +95,11 @@ namespace AsyncShoppingCart.Test
         public async Task GetByIdAsync_ExistingGuidPassed_Return200OkStatus()
         {
             // Arrange
-            var testGuid = new Guid("ab2bd817-98cd-4cf3-a80a-53ea0cd9c200");
             var singleItem = ShoppingCartMockData.SingleCartItem();
-            _mockService.Setup(service => service.GetByIdAsync(testGuid)).ReturnsAsync(singleItem);
+            _mockService.Setup(service => service.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync(singleItem);
 
             // Act
-            var okObjectResult = await _controller.GetAsync(testGuid);
+            var okObjectResult = await _controller.GetAsync(singleItem.Id);
             var result = okObjectResult as OkObjectResult;
 
             // Assert
@@ -109,17 +111,19 @@ namespace AsyncShoppingCart.Test
         public async Task GetByIdAsync_ExistingGuidPassed_ReturnRightItem()
         {
             // Arrange
-            var testGuid = new Guid("ab2bd817-98cd-4cf3-a80a-53ea0cd9c200");
             var singleItem = ShoppingCartMockData.SingleCartItem();
-            _mockService.Setup(service => service.GetByIdAsync(testGuid)).ReturnsAsync(singleItem);
+            _mockService.Setup(service => service.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync(singleItem);
 
             // Act
-            var okResult = await _controller.GetAsync(testGuid) as OkObjectResult;
+            var okResult = await _controller.GetAsync(singleItem.Id) as OkObjectResult;
             var result = okResult.Value as ShoppingItem;
 
             // Assert
-            Assert.Equal(testGuid, result.Id);
-            Assert.Equal(singleItem, result);
+            Assert.Same(singleItem, result);
+            Assert.Equal(singleItem.Id, result.Id);
+            Assert.Equal(singleItem.Name, result.Name);
+            Assert.Equal(singleItem.Manufacturer, result.Manufacturer);
+            Assert.Equal(singleItem.Price, result.Price);
             result.Should().BeEquivalentTo(singleItem);
         }
 
@@ -132,7 +136,7 @@ namespace AsyncShoppingCart.Test
         {
             // Arrange
             var nameMissingItem = ShoppingCartMockData.MissingNameItem();
-            _mockService.Setup(service => service.AddAsync(nameMissingItem));
+            _mockService.Setup(service => service.AddAsync(It.IsAny<ShoppingItem>()));
             _controller.ModelState.AddModelError("Name", "Name is required");
 
             // Act
@@ -148,7 +152,7 @@ namespace AsyncShoppingCart.Test
         {
             // Arrange
             var newItem = ShoppingCartMockData.NewCartItem();
-            _mockService.Setup(service => service.AddAsync(It.IsAny<ShoppingItem>())).ReturnsAsync(newItem);
+            _mockService.Setup(service => service.AddAsync(It.IsAny<ShoppingItem>())).ReturnsAsync(newItem).Verifiable();
 
             // Act
             var result = await _controller.PostAsync(newItem) as OkObjectResult;
@@ -165,14 +169,15 @@ namespace AsyncShoppingCart.Test
         {
             // Arrange
             var newItem = ShoppingCartMockData.NewCartItem();
-            _mockService.Setup(service => service.AddAsync(It.IsAny<ShoppingItem>())).ReturnsAsync(newItem);
+            _mockService.Setup(service => service.AddAsync(It.IsAny<ShoppingItem>())).ReturnsAsync(newItem).Verifiable();
 
             // Act
-            var result = await _controller.PostAsync(newItem) as OkObjectResult;
+            var okObjectResult = await _controller.PostAsync(newItem)as OkObjectResult;
+            var result = okObjectResult.Value as ShoppingItem;
 
             // Assert
-            Assert.Equal(newItem, result.Value);
-            result.Value.Should().BeEquivalentTo(newItem);
+            Assert.Same(newItem, result);
+            result.Should().BeEquivalentTo(newItem);
 
             _mockService.Verify(_ => _.AddAsync(newItem), Times.Exactly(1));
         }
@@ -186,8 +191,8 @@ namespace AsyncShoppingCart.Test
         {
             // Arrange
             var testItem = ShoppingCartMockData.SingleCartItem();
-            _mockService.Setup(service => service.GetByIdAsync(testItem.Id)).ReturnsAsync(testItem).Verifiable();
-            _mockService.Setup(service => service.UpdateAsync(testItem)).ReturnsAsync(testItem).Verifiable();
+            _mockService.Setup(service => service.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync(testItem).Verifiable();
+            _mockService.Setup(service => service.UpdateAsync(It.IsAny<ShoppingItem>())).ReturnsAsync(testItem).Verifiable();
 
             // Act
             var okObjectResult = await _controller.PutAsync(testItem);
@@ -204,8 +209,8 @@ namespace AsyncShoppingCart.Test
         {
             // Arrange
             var testItem = ShoppingCartMockData.SingleCartItem();
-            _mockService.Setup(service => service.GetByIdAsync(testItem.Id)).ReturnsAsync(testItem);
-            _mockService.Setup(service => service.UpdateAsync(testItem)).ReturnsAsync(testItem);
+            _mockService.Setup(service => service.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync(testItem);
+            _mockService.Setup(service => service.UpdateAsync(It.IsAny<ShoppingItem>())).ReturnsAsync(testItem);
 
             // Act
             var result = await _controller.PutAsync(testItem) as OkObjectResult;
@@ -213,6 +218,7 @@ namespace AsyncShoppingCart.Test
 
             // Assert
             Assert.IsType<ShoppingItem>(item);
+            Assert.Same(testItem, item);
             Assert.Equal(testItem.Id, item.Id);
             Assert.Equal(testItem.Name, item.Name);
             Assert.Equal(testItem.Manufacturer, item.Manufacturer);
@@ -242,13 +248,12 @@ namespace AsyncShoppingCart.Test
         public async Task RemoveAsync_ExistingGuidPassed_Return204NoContentStatus()
         {
             // Arrange
-            var existingGuid = new Guid("ab2bd817-98cd-4cf3-a80a-53ea0cd9c200");
             var existingItem = ShoppingCartMockData.SingleCartItem();
-            _mockService.Setup(service => service.GetByIdAsync(existingGuid)).ReturnsAsync(existingItem).Verifiable();
-            _mockService.Setup(service => service.RemoveAsync(existingItem)).Verifiable();
+            _mockService.Setup(service => service.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync(existingItem).Verifiable();
+            _mockService.Setup(service => service.RemoveAsync(It.IsAny<ShoppingItem>())).Verifiable();
 
             // Act
-            var noContentResponse = await _controller.RemoveAsync(existingGuid);
+            var noContentResponse = await _controller.RemoveAsync(existingItem.Id);
             var result = noContentResponse as NoContentResult;
 
             // Assert
