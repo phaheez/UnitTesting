@@ -18,6 +18,7 @@ namespace ShoppingCart.Test
         public ShoppingCartControllerTest()
         {
             _mockService = new Mock<IShoppingCartService>();
+            //_mockService = new Mock<IShoppingCartService>() { DefaultValue = DefaultValue.Mock };
             _controller = new ShoppingCartController(_mockService.Object);
         }
 

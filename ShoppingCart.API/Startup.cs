@@ -12,6 +12,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ShoppingCart.API.Services;
+using ShoppingCart.API.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace ShoppingCart.API
 {
@@ -33,6 +35,8 @@ namespace ShoppingCart.API
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "ShoppingCart.API", Version = "v1" });
             });
+            services.AddDbContext<AppDbContext>(c => c.UseInMemoryDatabase("InMemoryDb").UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+            services.AddScoped<IAsyncShoppingCartService, AsyncShoppingCartService>();
             services.AddScoped<IShoppingCartService, ShoppingCartService>();
         }
 
@@ -44,6 +48,12 @@ namespace ShoppingCart.API
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ShoppingCart.API v1"));
+            }
+
+            using (var scope = app.ApplicationServices.CreateScope())
+            {
+                var service = scope.ServiceProvider.GetService<AppDbContext>();
+                SeedData.AddTestData(service);
             }
 
             app.UseHttpsRedirection();
